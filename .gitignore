@@ -1,0 +1,4 @@
+# Binarios compilados y artefactos locales
+*.exe
+RamCleaner.log
+config.ini
