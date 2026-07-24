@@ -2,3 +2,5 @@
 *.exe
 RamCleaner.log
 config.ini
+CpuWatch.log
+CpuWatch.ini

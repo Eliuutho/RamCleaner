@@ -32,6 +32,9 @@ static class Native
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool ChangeWindowMessageFilter(uint message, uint flag);
 
+    [DllImport("shell32.dll")]
+    public static extern int SHQueryUserNotificationState(out int state);
+
     [DllImport("ntdll.dll")]
     public static extern int NtSetSystemInformation(int infoClass, ref int info, int length);
 
@@ -75,6 +78,7 @@ class Config
     public bool CleanStandbyLow = true;
     public bool CleanModified = false;
     public bool CleanSysCache = false;
+    public int Notif = 1; // 0=siempre, 1=no durante juegos, 2=solo manuales, 3=nunca
 
     static string CfgPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini"); } }
 
@@ -98,6 +102,7 @@ class Config
                     else if (k == "standby_low") c.CleanStandbyLow = v == "1";
                     else if (k == "modified") c.CleanModified = v == "1";
                     else if (k == "syscache") c.CleanSysCache = v == "1";
+                    else if (k == "notif" && int.TryParse(v, out n) && n >= 0 && n <= 3) c.Notif = n;
                 }
             }
         }
@@ -116,7 +121,8 @@ class Config
                 "standby=" + (CleanStandby ? 1 : 0),
                 "standby_low=" + (CleanStandbyLow ? 1 : 0),
                 "modified=" + (CleanModified ? 1 : 0),
-                "syscache=" + (CleanSysCache ? 1 : 0)
+                "syscache=" + (CleanSysCache ? 1 : 0),
+                "notif=" + Notif
             });
         }
         catch { }
@@ -207,6 +213,11 @@ class TrayApp : ApplicationContext
             new string[] { "Desactivado", "Cada 15 min", "Cada 30 min", "Cada 60 min" },
             cfg.IntervalMin, delegate(int v) { cfg.IntervalMin = v; }));
         menu.Items.Add(miAuto);
+
+        menu.Items.Add(RadioGroup("Notificaciones",
+            new int[] { 0, 1, 2, 3 },
+            new string[] { "Siempre", "No durante juegos", "Solo limpiezas manuales", "Nunca" },
+            cfg.Notif, delegate(int v) { cfg.Notif = v; }));
 
         var miStart = new ToolStripMenuItem("Iniciar con Windows");
         miStart.Checked = TaskExists();
@@ -325,16 +336,24 @@ class TrayApp : ApplicationContext
         if (cleaning) return;
         cleaning = true;
         lastClean = DateTime.UtcNow;
+        bool manual = reason == "manual";
         ThreadPool.QueueUserWorkItem(delegate(object state)
         {
             CleanResult r = DoClean(reason);
             ui.Post(delegate(object o)
             {
-                notify.BalloonTipTitle = "RamCleaner";
-                notify.BalloonTipText = r.FreedMB > 0
-                    ? string.Format("Liberados {0} MB (uso {1}% → {2}%)", r.FreedMB, r.PctBefore, r.PctAfter)
-                    : string.Format("Sin cambio apreciable (uso {0}% → {1}%)", r.PctBefore, r.PctAfter);
-                notify.ShowBalloonTip(3000);
+                bool show =
+                    cfg.Notif == 0 ||
+                    (cfg.Notif == 1 && (manual || !NotifBlocked())) ||
+                    (cfg.Notif == 2 && manual);
+                if (show)
+                {
+                    notify.BalloonTipTitle = "RamCleaner";
+                    notify.BalloonTipText = r.FreedMB > 0
+                        ? string.Format("Liberados {0} MB (uso {1}% → {2}%)", r.FreedMB, r.PctBefore, r.PctAfter)
+                        : string.Format("Sin cambio apreciable (uso {0}% → {1}%)", r.PctBefore, r.PctAfter);
+                    notify.ShowBalloonTip(3000);
+                }
                 cleaning = false;
             }, null);
         });
@@ -487,6 +506,14 @@ class TrayApp : ApplicationContext
             }
         }
         catch { return false; }
+    }
+
+    // true si el sistema está en juego/pantalla completa/presentación (Windows no aceptaría notificaciones)
+    static bool NotifBlocked()
+    {
+        int s;
+        if (Native.SHQueryUserNotificationState(out s) != 0) return false; // ante la duda, mostrar
+        return s != 5; // QUNS_ACCEPTS_NOTIFICATIONS
     }
 
     static bool TaskExists()

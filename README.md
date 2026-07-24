@@ -4,8 +4,9 @@ Limpiador de RAM para Windows 11 estilo Mem Reduct, en C# puro (.NET Framework, 
 
 ## Componentes
 
-- **RamCleanerTray.cs** — app residente de bandeja: icono con % de RAM en vivo (rojo al superar el umbral), doble clic = limpiar, menú con opciones de qué limpiar, auto-limpieza por umbral de uso y por intervalo, notificación con MB liberados, "Iniciar con Windows" (tarea programada elevada sin límite de ejecución, sin UAC por arranque) y config persistente en `config.ini`.
+- **RamCleanerTray.cs** — app residente de bandeja: icono con % de RAM en vivo (rojo al superar el umbral), doble clic = limpiar, menú con opciones de qué limpiar, auto-limpieza por umbral de uso y por intervalo, notificación con MB liberados (configurable: siempre / no durante juegos / solo manuales / nunca), "Iniciar con Windows" (tarea programada elevada sin límite de ejecución, sin UAC por arranque) y config persistente en `config.ini`.
 - **RamCleaner.cs** — versión CLI silenciosa de un disparo (la original), útil para tareas programadas.
+- **CpuWatch.cs** — vigilante de picos de CPU: sin UI, muestrea cada 2 s y registra en `CpuWatch.log` qué procesos consumían cuando la CPU total supera el umbral de forma sostenida (config en `CpuWatch.ini`; omite picos causados mayormente por la app en primer plano, p. ej. un juego).
 - **app.manifest** — pide `requireAdministrator` (la purga de standby list lo exige).
 - **instalar-tarea.ps1** — instala el tray: lo inicia ya y registra la tarea de logon vía `Register-ScheduledTask`.
 
@@ -28,8 +29,9 @@ Limpiador de RAM para Windows 11 estilo Mem Reduct, en C# puro (.NET Framework, 
 ## Compilar
 
 ```
-csc /nologo /optimize /target:winexe /win32manifest:app.manifest /out:RamCleanerTray.exe RamCleanerTray.cs
-csc /nologo /optimize /target:winexe /out:RamCleaner.exe RamCleaner.cs
+csc /nologo /optimize /codepage:65001 /target:winexe /win32manifest:app.manifest /out:RamCleanerTray.exe RamCleanerTray.cs
+csc /nologo /optimize /codepage:65001 /target:winexe /out:RamCleaner.exe RamCleaner.cs
+csc /nologo /optimize /codepage:65001 /target:winexe /out:CpuWatch.exe CpuWatch.cs
 ```
 
 (`csc` = `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`)
