@@ -339,7 +339,7 @@ class TrayApp : ApplicationContext
         bool manual = reason == "manual";
         ThreadPool.QueueUserWorkItem(delegate(object state)
         {
-            CleanResult r = DoClean(reason);
+            CleanResult r = DoClean(cfg, reason);
             ui.Post(delegate(object o)
             {
                 bool show =
@@ -359,7 +359,16 @@ class TrayApp : ApplicationContext
         });
     }
 
-    CleanResult DoClean(string reason)
+    // modo -clean (CLI): misma config y mismo log que el tray, sin UI
+    public static void OneShotClean()
+    {
+        EnablePrivilege("SeProfileSingleProcessPrivilege");
+        EnablePrivilege("SeIncreaseQuotaPrivilege");
+        EnablePrivilege("SeDebugPrivilege");
+        DoClean(Config.Load(), "cli");
+    }
+
+    static CleanResult DoClean(Config cfg, string reason)
     {
         var res = new CleanResult();
         var m = new Native.MEMORYSTATUSEX();
@@ -527,8 +536,16 @@ static class Program
     static Mutex mtx;
 
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
+        // modo CLI: limpieza silenciosa de un disparo y salir (antes era un exe aparte)
+        if (args.Length > 0 && (args[0].Equals("-clean", StringComparison.OrdinalIgnoreCase)
+                             || args[0].Equals("/clean", StringComparison.OrdinalIgnoreCase)))
+        {
+            TrayApp.OneShotClean();
+            return;
+        }
+
         bool created;
         mtx = new Mutex(true, "RamCleanerTray_single_instance", out created);
         if (!created) return; // ya hay una instancia corriendo
