@@ -2,7 +2,17 @@
 
 **Mem Reduct-style RAM cleaner + CPU spike watcher for Windows 10/11, in pure C#.** No dependencies, no frameworks — it builds with the `csc.exe` compiler that ships with every Windows install. UI in Spanish.
 
+[![Release](https://img.shields.io/github/v/release/Eliuutho/RamCleaner?style=for-the-badge&logo=github&color=43B7E0)](https://github.com/Eliuutho/RamCleaner/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Eliuutho/RamCleaner/v1.0.0/total?style=for-the-badge&color=43B7E0)](https://github.com/Eliuutho/RamCleaner/releases/tag/v1.0.0)
+
+## ⬇️ Descarga
+
+- [RamCleanerTray.exe](https://github.com/Eliuutho/RamCleaner/releases/download/v1.0.0/RamCleanerTray.exe) — app de bandeja
+- [CpuWatch.exe](https://github.com/Eliuutho/RamCleaner/releases/download/v1.0.0/CpuWatch.exe) — vigilante de picos de CPU
+- [Web de la release](https://github.com/Eliuutho/RamCleaner/releases/tag/v1.0.0)
+
 ---
+
 
 ## EN — Overview
 
